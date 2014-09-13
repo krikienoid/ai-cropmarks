@@ -485,9 +485,10 @@ function drawCropMarks(DOC, LAYER, BOX) {
 
 		// define stroke
 		var newLine = LAYER.pathItems.add();
-		newLine.stroked     = true;
-		newLine.strokeColor = color;
-		newLine.strokeWidth = thickness;
+		newLine.stroked      = true;
+		newLine.strokeColor  = color;
+		newLine.strokeWidth  = thickness;
+		newLine.pixelAligned = false;
 
 		// set path
 		newLine.setEntirePath(anchors);
