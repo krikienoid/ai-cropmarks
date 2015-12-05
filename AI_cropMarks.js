@@ -10,18 +10,20 @@
 
 var W,
     SETTINGS,
-    BLACK, WHITE;
+    BLACK,
+    WHITE;
 
 // Initialization
 
 function main() {
 
-    if(!app.activeDocument) return 1;
+    if (!app.activeDocument) return 1;
 
-    if(app.activeDocument.documentColorSpace == DocumentColorSpace.CMYK) {
+    if (app.activeDocument.documentColorSpace == DocumentColorSpace.CMYK) {
         BLACK = colorCMYK(40,40,40,100);
         WHITE = colorCMYK(0,0,0,0);
-    } else {
+    }
+    else {
         BLACK = colorRGB(0,0,0);
         WHITE = colorRGB(255,255,255);
     }
@@ -48,17 +50,17 @@ function initSettings() {
         sO : new UnitValue(0.25,  "in")
     };
 
-    var setVal  = function(tag, val) {
+    var setVal = function (tag, val) {
             // EXPECTS: String tag, Number val
             // RETURNS: void
             _sData[tag] = new UnitValue(val, DOC_UNIT);
         },
-        getVal  = function(tag) {
+        getVal = function (tag) {
             // EXPECTS: String tag
             // RETURNS: Number value
             return _sData[tag].as(DOC_UNIT);
         },
-        getPts = function(tag) {
+        getPts = function (tag) {
             // EXPECTS: String tag
             // RETURNS: Number value
             return _sData[tag].as("pt");
@@ -184,14 +186,15 @@ function initWindowMain() {
         newStatic.preferredSize.width = 12;
         newStatic.text = label + ":";
 
-        if(isEdit) {
+        if (isEdit) {
             newText = newCol.add("edittext");
             newText.minValue   = 0;
             newText.value      = 0;
             newText.text       = "0";
             newText.characters = 10;
             newText.justify    = "left";
-        } else {
+        }
+        else {
             newText = newCol.add("statictext");
         }
 
@@ -241,7 +244,7 @@ function initWindowMain() {
         return newText;
     }
 
-    if(SETTINGS.debuggerOn) W.DEBUG = initDebugPanel();
+    if (SETTINGS.debuggerOn) W.DEBUG = initDebugPanel();
 
     var COL_ROW_INPUTS = newRowColInputGroups();
 
@@ -267,7 +270,7 @@ function initWindowMain() {
         DG : STROKE.row1.dG
     };
 
-    var setBoxProp = (function() {
+    var setBoxProp = (function () {
         var uT = SETTINGS.docUnit,
             dX = SETTINGS.getVal("dX"),
             dY = SETTINGS.getVal("dY"),
@@ -277,12 +280,12 @@ function initWindowMain() {
             bY = SETTINGS.getVal("bY");
 
         // Input and Update functions
-        var updateControl = function(control, input, displayUnit) {
+        var updateControl = function (control, input, displayUnit) {
                 // EXPECTS: Object control, String input, String displayUnit
                 // RETURNS: Number value
                 var _uV;
-                if(typeof displayUnit  == "undefined") displayUnit  = uT;
-                if(typeof input == "undefined")        input        = control.text;
+                if (typeof displayUnit  == "undefined") displayUnit  = uT;
+                if (typeof input == "undefined")        input        = control.text;
                 _uV = (isValidNumber(input))?
                     new UnitValue(input, uT) :
                     new UnitValue(input);
@@ -290,7 +293,7 @@ function initWindowMain() {
                 control.text  = trimDec(_uV.as(displayUnit)) + " " + displayUnit;
                 return control.value;
             },
-            update        = function() {
+            update        = function () {
                 // EXPECTS: void
                 // RETURNS: void
                 updateControl(CONTROLS.PX, bX); updateControl(CONTROLS.PY, bY);
@@ -300,65 +303,65 @@ function initWindowMain() {
             };
 
         // Helper functions
-        var setEvenCX   = function() {cX = dX - (2 * bX);},
-            setEvenCY   = function() {cY = dY - (2 * bY);},
-            setCenterCX = function() {if(CONTROLS.LI.value) {bX = bY; setEvenCX();}},
-            setCenterCY = function() {if(CONTROLS.LI.value) {bY = bX; setEvenCY();}},
-            setCenterBX = function() {setEvenCX(); setCenterCY();},
-            setCenterBY = function() {setEvenCY(); setCenterCX();},
-            getBB       = function() {return dY - (bY + cY);},
-            getBR       = function() {return dX - (bX + cX);};
+        var setEvenCX   = function () {cX = dX - (2 * bX);},
+            setEvenCY   = function () {cY = dY - (2 * bY);},
+            setCenterCX = function () {if (CONTROLS.LI.value) {bX = bY; setEvenCX();}},
+            setCenterCY = function () {if (CONTROLS.LI.value) {bY = bX; setEvenCY();}},
+            setCenterBX = function () {setEvenCX(); setCenterCY();},
+            setCenterBY = function () {setEvenCY(); setCenterCX();},
+            getBB       = function () {return dY - (bY + cY);},
+            getBR       = function () {return dX - (bX + cX);};
 
         // Crop area property setters
-        var setPX = function(n) {bX = n;},
-            setPY = function(n) {bY = n;},
-            setCX = function(n) {
+        var setPX = function (n) {bX = n;},
+            setPY = function (n) {bY = n;},
+            setCX = function (n) {
                 cX = n;
-                if(CONTROLS.BC.value) bX = (dX - cX) / 2;
+                if (CONTROLS.BC.value) bX = (dX - cX) / 2;
                 setCenterCY();
             },
-            setCY = function(n) {
+            setCY = function (n) {
                 cY = n;
-                if(CONTROLS.BC.value) bY = (dY - cY) / 2;
+                if (CONTROLS.BC.value) bY = (dY - cY) / 2;
                 setCenterCX();
             },
-            setBT = function(n) {
+            setBT = function (n) {
                 var tmp = bY;
                 bY = n;
-                if(CONTROLS.BC.value) setCenterBY();
-                else                  cY -= n - tmp;
+                if (CONTROLS.BC.value) setCenterBY();
+                else                   cY -= n - tmp;
             },
-            setBB = function(n) {
+            setBB = function (n) {
                 cY += getBB() - n;
-                if(CONTROLS.BC.value) {
+                if (CONTROLS.BC.value) {
                     bY = getBB();
                     setCenterBY();
                 }
             },
-            setBL = function(n) {
+            setBL = function (n) {
                 var tmp = bX;
                 bX = n;
-                if(CONTROLS.BC.value) setCenterBX();
-                else                  cX -= n - tmp;
+                if (CONTROLS.BC.value) setCenterBX();
+                else                   cX -= n - tmp;
             },
-            setBR = function(n) {
+            setBR = function (n) {
                 cX += getBR() - n;
-                if(CONTROLS.BC.value) {
+                if (CONTROLS.BC.value) {
                     bX = getBR();
                     setCenterBX();
                 }
             },
-            setBA = function(n) {
+            setBA = function (n) {
                 bX = bY = n;
                 setEvenCX();
                 setEvenCY();
             };
 
-        return function(tag, input, displayUnit) {
+        return function (tag, input, displayUnit) {
             // EXPECTS: String tag, String input, String displayUnit
             // RETURNS: void
             var n = updateControl(CONTROLS[tag], input, displayUnit);
-            switch(tag) {
+            switch (tag) {
                 case "PX" : setPX(n); break;
                 case "PY" : setPY(n); break;
                 case "CX" : setCX(n); break;
@@ -377,40 +380,40 @@ function initWindowMain() {
     setBoxProp("DW", SETTINGS.getVal("dX"));
     setBoxProp("DH", SETTINGS.getVal("dY"));
 
-    CONTROLS.CX.onChange = function() {setBoxProp("CX");};
-    CONTROLS.CY.onChange = function() {setBoxProp("CY");};
-    CONTROLS.PX.onChange = function() {setBoxProp("PX");};
-    CONTROLS.PY.onChange = function() {setBoxProp("PY");};
+    CONTROLS.CX.onChange = function () {setBoxProp("CX");};
+    CONTROLS.CY.onChange = function () {setBoxProp("CY");};
+    CONTROLS.PX.onChange = function () {setBoxProp("PX");};
+    CONTROLS.PY.onChange = function () {setBoxProp("PY");};
 
-    CONTROLS.LI.onClick  = function() {
+    CONTROLS.LI.onClick  = function () {
         CONTROLS.BC.enabled = !CONTROLS.LI.value;
-        if(CONTROLS.LI.value) {
+        if (CONTROLS.LI.value) {
             CONTROLS.BC.value = CONTROLS.LI.value;
             CONTROLS.BC.onClick();
             setBoxProp("BA");
         }
     };
-    CONTROLS.BC.onClick  = function() {
+    CONTROLS.BC.onClick  = function () {
         CONTROLS.PX.enabled = CONTROLS.PY.enabled = !CONTROLS.BC.value;
-        if(CONTROLS.BC.value) {
+        if (CONTROLS.BC.value) {
             CONTROLS.CX.onChange();
             CONTROLS.CY.onChange();
         }
     };
 
-    CONTROLS.BT.onChange = function() {setBoxProp("BT");};
-    CONTROLS.BB.onChange = function() {setBoxProp("BB");};
-    CONTROLS.BL.onChange = function() {setBoxProp("BL");};
-    CONTROLS.BR.onChange = function() {setBoxProp("BR");};
+    CONTROLS.BT.onChange = function () {setBoxProp("BT");};
+    CONTROLS.BB.onChange = function () {setBoxProp("BB");};
+    CONTROLS.BL.onChange = function () {setBoxProp("BL");};
+    CONTROLS.BR.onChange = function () {setBoxProp("BR");};
 
-    CONTROLS.SW.onChange = function() {setBoxProp("SW", undefined, "pt");};
-    CONTROLS.SL.onChange = function() {setBoxProp("SL");};
-    CONTROLS.SO.onChange = function() {setBoxProp("SO");};
+    CONTROLS.SW.onChange = function () {setBoxProp("SW", undefined, "pt");};
+    CONTROLS.SL.onChange = function () {setBoxProp("SL");};
+    CONTROLS.SO.onChange = function () {setBoxProp("SO");};
 
     // Buttons
 
-    WINDOW.bottomGroup.cancelButton.onClick = function() {return WINDOW.close();};
-    WINDOW.bottomGroup.startButton.onClick  = function() {
+    WINDOW.bottomGroup.cancelButton.onClick = function () {return WINDOW.close();};
+    WINDOW.bottomGroup.startButton.onClick  = function () {
 
         // save settings
         SETTINGS.setVal("cX", CONTROLS.CX.value);
@@ -462,7 +465,7 @@ function draw() {
 
     drawCropMarks(DOC, LAYER, BOX);
 
-    if(SETTINGS.drawGuides) drawGuideBox(DOC, LAYER, BOX);
+    if (SETTINGS.drawGuides) drawGuideBox(DOC, LAYER, BOX);
 
     BOX.remove();
 
@@ -505,7 +508,7 @@ function drawCropMarks(DOC, LAYER, BOX) {
             color;
 
         // set anchors
-        switch(direction) {
+        switch (direction) {
             case 0: // up
                 startPoint[1] -= sO;
                 endPoint[1] = startPoint[1] - sL;
@@ -525,10 +528,11 @@ function drawCropMarks(DOC, LAYER, BOX) {
         }
 
         // set line properties
-        if(!isOutline) {
+        if (!isOutline) {
             thickness = sW;
             color     = BLACK;
-        } else {
+        }
+        else {
             thickness = sW * 3;
             color     = WHITE;
         }
@@ -550,7 +554,7 @@ function drawCropMarks(DOC, LAYER, BOX) {
         drawMark(getCorner(0), 3, isOutline);
     }
 
-    if(SETTINGS.whiteOutlines) drawMarks(true);
+    if (SETTINGS.whiteOutlines) drawMarks(true);
 
     drawMarks(false);
 
@@ -563,11 +567,12 @@ function drawGuideBox(DOC, LAYER, BOX) {
             startPoint = [],
             endPoint   = [];
         newLine.guides = true;
-        if(isVertical) {
+        if (isVertical) {
             startPoint[0] = endPoint[0] = shift;
             startPoint[1] = 0;
             endPoint[1]   = SETTINGS.getPts("dY") * -1;
-        } else {
+        }
+        else {
             startPoint[1] = endPoint[1] = shift * -1;
             startPoint[0] = 0;
             endPoint[0]   = SETTINGS.getPts("dX");
@@ -594,14 +599,14 @@ function isValidNumber(s) {
 function trimDec(n) {
     // EXPECTS: Number n
     // RETURNS: String
-    if(Math.ceil((n * 100000) % 10) > 0) return n.toFixed(4);
-    else                                 return n.toString();
+    if (Math.ceil((n * 100000) % 10) > 0) return n.toFixed(4);
+    else                                  return n.toString();
 }
 
 function getDocUnit() {
     // EXPECTS: void
     // RETURNS: String unit
-    switch(app.activeDocument.rulerUnits) {
+    switch (app.activeDocument.rulerUnits) {
         case RulerUnits.Centimeters: return "cm";
         case RulerUnits.Inches:      return "in";
         case RulerUnits.Millimeters: return "mm";
@@ -631,7 +636,7 @@ function colorCMYK(c, m, y, k) {
 }
 
 function printToDebug(s) {
-    if(SETTINGS.debuggerOn) W.DEBUG.text += s + " ";
+    if (SETTINGS.debuggerOn) W.DEBUG.text += s + " ";
 }
 
 // Run
