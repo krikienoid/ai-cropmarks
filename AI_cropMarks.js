@@ -8,10 +8,8 @@
 
 ***************************************************/
 
-var W,
-    SETTINGS,
-    BLACK,
-    WHITE;
+var WINDOW,
+    SETTINGS;
 
 //
 // Initialization
@@ -21,16 +19,7 @@ function main() {
 
     if (!app.activeDocument) return 1;
 
-    if (app.activeDocument.documentColorSpace == DocumentColorSpace.CMYK) {
-        BLACK = colorCMYK(40,40,40,100);
-        WHITE = colorCMYK(0,0,0,0);
-    }
-    else {
-        BLACK = colorRGB(0,0,0);
-        WHITE = colorRGB(255,255,255);
-    }
-
-    W = {};
+    WINDOW = {};
     initSettings();
     initWindowMain();
 
@@ -79,7 +68,7 @@ function initSettings() {
 function initWindowMain() {
     var doc    = app.activeDocument;
 
-    var WINDOW = new Window("dialog { \
+    var window = new Window("dialog { \
         orientation   : 'column',            \
         alignChildren : ['fill', 'top'],     \
         preferredSize : [300, 130],          \
@@ -160,10 +149,6 @@ function initWindowMain() {
         } \
     }");
 
-    var C_BOX  = WINDOW.boxPanel.rows,
-        BLEEDS = WINDOW.boxPanel.bleeds.row0,
-        STROKE = WINDOW.strokePanel;
-
     function createRolColHeader(parent, label) {
         var newStatic = parent.add("statictext");
         newStatic.preferredSize.width = 80;
@@ -200,10 +185,10 @@ function initWindowMain() {
 
     }
 
-    function createRowColInputGroupsArr() {
-        var newRow0 = C_BOX.add("group"),
-            newRow1 = C_BOX.add("group"),
-            newRow2 = C_BOX.add("group");
+    function createRowColInputGroupsArr(parent) {
+        var newRow0 = parent.add("group"),
+            newRow1 = parent.add("group"),
+            newRow2 = parent.add("group");
 
         newRow0.orientation   = "row";
         newRow0.alignChildren = ["left", "center"];
@@ -230,8 +215,8 @@ function initWindowMain() {
 
     }
 
-    function createDebugPanel() {
-        var newPanel = WINDOW.add("panel"),
+    function createDebugPanel(parent) {
+        var newPanel = parent.add("panel"),
             newText  = newPanel.add("statictext");
         newPanel.alignChildren = ["fill", "fill"];
         newPanel.margins       = 15;
@@ -242,30 +227,30 @@ function initWindowMain() {
         return newText;
     }
 
-    if (SETTINGS.debuggerOn) W.DEBUG = createDebugPanel();
+    if (SETTINGS.debuggerOn) WINDOW.DEBUG = createDebugPanel(window);
 
-    var COL_ROW_INPUTS = createRowColInputGroupsArr();
+    var boxPanelInputs = createRowColInputGroupsArr(window.boxPanel.rows);
 
     // Controls
 
     var CONTROLS = {
-        DW : COL_ROW_INPUTS[0][0],
-        DH : COL_ROW_INPUTS[1][0],
-        PX : COL_ROW_INPUTS[0][1],
-        PY : COL_ROW_INPUTS[1][1],
-        CX : COL_ROW_INPUTS[0][2],
-        CY : COL_ROW_INPUTS[1][2],
-        LI : WINDOW.boxPanel.bleeds.row1.li,
-        BC : WINDOW.boxPanel.bleeds.row1.bC,
-        BT : BLEEDS.bT,
-        BB : BLEEDS.bB,
-        BL : BLEEDS.bL,
-        BR : BLEEDS.bR,
-        SL : STROKE.row0.sL,
-        SW : STROKE.row0.sW,
-        SO : STROKE.row0.sO,
-        WO : STROKE.row1.wO,
-        DG : STROKE.row1.dG
+        DW : boxPanelInputs[0][0],
+        DH : boxPanelInputs[1][0],
+        PX : boxPanelInputs[0][1],
+        PY : boxPanelInputs[1][1],
+        CX : boxPanelInputs[0][2],
+        CY : boxPanelInputs[1][2],
+        LI : window.boxPanel.bleeds.row1.li,
+        BC : window.boxPanel.bleeds.row1.bC,
+        BT : window.boxPanel.bleeds.row0.bT,
+        BB : window.boxPanel.bleeds.row0.bB,
+        BL : window.boxPanel.bleeds.row0.bL,
+        BR : window.boxPanel.bleeds.row0.bR,
+        SL : window.strokePanel.row0.sL,
+        SW : window.strokePanel.row0.sW,
+        SO : window.strokePanel.row0.sO,
+        WO : window.strokePanel.row1.wO,
+        DG : window.strokePanel.row1.dG
     };
 
     var setBoxProp = (function () {
@@ -276,29 +261,6 @@ function initWindowMain() {
             cY = SETTINGS.getVal("cY"),
             bX = SETTINGS.getVal("bX"),
             bY = SETTINGS.getVal("bY");
-
-        // Input and Update functions
-        var updateControl = function (control, input, displayUnit) {
-                // EXPECTS: Object control, String input, String displayUnit
-                // RETURNS: Number value
-                var _uV;
-                if (typeof displayUnit  == "undefined") displayUnit  = uT;
-                if (typeof input == "undefined")        input        = control.text;
-                _uV = (isValidNumber(input))?
-                    new UnitValue(input, uT) :
-                    new UnitValue(input);
-                control.value = _uV.as(uT);
-                control.text  = trimDec(_uV.as(displayUnit)) + " " + displayUnit;
-                return control.value;
-            },
-            update        = function () {
-                // EXPECTS: void
-                // RETURNS: void
-                updateControl(CONTROLS.PX, bX); updateControl(CONTROLS.PY, bY);
-                updateControl(CONTROLS.CX, cX); updateControl(CONTROLS.CY, cY);
-                updateControl(CONTROLS.BT, bY); updateControl(CONTROLS.BB, getBB());
-                updateControl(CONTROLS.BL, bX); updateControl(CONTROLS.BR, getBR());
-            };
 
         // Helper functions
         var setEvenCX   = function () {cX = dX - (2 * bX);},
@@ -353,6 +315,29 @@ function initWindowMain() {
                 bX = bY = n;
                 setEvenCX();
                 setEvenCY();
+            };
+
+        // Input and Update functions
+        var updateControl = function (control, input, displayUnit) {
+                // EXPECTS: Object control, String input, String displayUnit
+                // RETURNS: Number value
+                var _uV;
+                if (typeof displayUnit === "undefined") displayUnit  = uT;
+                if (typeof input === "undefined")       input        = control.text;
+                _uV = (isValidNumber(input))?
+                    new UnitValue(input, uT) :
+                    new UnitValue(input);
+                control.value = _uV.as(uT);
+                control.text  = trimDec(_uV.as(displayUnit)) + " " + displayUnit;
+                return control.value;
+            },
+            update        = function () {
+                // EXPECTS: void
+                // RETURNS: void
+                updateControl(CONTROLS.PX, bX); updateControl(CONTROLS.PY, bY);
+                updateControl(CONTROLS.CX, cX); updateControl(CONTROLS.CY, cY);
+                updateControl(CONTROLS.BT, bY); updateControl(CONTROLS.BB, getBB());
+                updateControl(CONTROLS.BL, bX); updateControl(CONTROLS.BR, getBR());
             };
 
         return function (tag, input, displayUnit) {
@@ -410,8 +395,8 @@ function initWindowMain() {
 
     // Buttons
 
-    WINDOW.bottomGroup.cancelButton.onClick = function () {return WINDOW.close();};
-    WINDOW.bottomGroup.startButton.onClick  = function () {
+    window.bottomGroup.cancelButton.onClick = function () {return window.close();};
+    window.bottomGroup.startButton.onClick  = function () {
 
         // save settings
         SETTINGS.setVal("cX", CONTROLS.CX.value);
@@ -425,7 +410,7 @@ function initWindowMain() {
         SETTINGS.drawGuides    = CONTROLS.DG.value;
 
         // start
-        WINDOW.close();
+        window.close();
         draw();
 
     };
@@ -442,8 +427,9 @@ function initWindowMain() {
     setBoxProp("SL", SETTINGS.getVal("sL"));
     setBoxProp("SO", SETTINGS.getVal("sO"));
 
-    W.MAIN = WINDOW;
-    W.MAIN.show();
+    WINDOW.MAIN = window;
+
+    window.show();
 
 }
 
@@ -472,11 +458,21 @@ function draw() {
 }
 
 function drawCropMarks(doc, layer, box) {
-    var sW = SETTINGS.getPts("sW"),
-        sL = SETTINGS.getPts("sL"),
-        sO = SETTINGS.getPts("sO");
+    var DIR = {Up : 0, Right : 1, Down : 2, Left : 3},
+        sW  = SETTINGS.getPts("sW"),
+        sL  = SETTINGS.getPts("sL"),
+        sO  = SETTINGS.getPts("sO"),
+        BLACK,
+        WHITE;
 
-    var DIR = {Up : 0, Right : 1, Down : 2, Left : 3};
+    if (doc.documentColorSpace === DocumentColorSpace.CMYK) {
+        BLACK = colorCMYK(40,40,40,100);
+        WHITE = colorCMYK(0,0,0,0);
+    }
+    else {
+        BLACK = colorRGB(0,0,0);
+        WHITE = colorRGB(255,255,255);
+    }
 
     function getCorner(i) {
         // EXPECTS: Number i
@@ -485,12 +481,18 @@ function drawCropMarks(doc, layer, box) {
     }
 
     function drawMark(startPoint, direction, isOutline) {
-        // EXPECTS: Array startPoint, Number direction, Boolean isOutline
+        // EXPECTS: Array startPoint, DIR direction, Boolean isOutline
         // RETURNS: PathItem line
         var newLine  = layer.pathItems.add(),
             endPoint = startPoint.slice(0);
 
-        // get anchors
+        // set line properties
+        newLine.stroked      = true;
+        newLine.strokeColor  = (!isOutline)? BLACK : WHITE;
+        newLine.strokeWidth  = (!isOutline)? sW    : sW * 3;
+        newLine.pixelAligned = false;
+
+        // set line path
         switch (direction) {
             case DIR.Up :
                 startPoint[1] -= sO;
@@ -510,13 +512,6 @@ function drawCropMarks(doc, layer, box) {
                 break;
         }
 
-        // set line properties
-        newLine.stroked      = true;
-        newLine.strokeColor  = (!isOutline)? BLACK : WHITE;
-        newLine.strokeWidth  = (!isOutline)? sW    : sW * 3;
-        newLine.pixelAligned = false;
-
-        // set line path
         newLine.setEntirePath([startPoint, endPoint]);
 
         // return line
@@ -619,7 +614,7 @@ function colorCMYK(c, m, y, k) {
 }
 
 function printToDebug(s) {
-    if (SETTINGS.debuggerOn) W.DEBUG.text += s + " ";
+    if (SETTINGS.debuggerOn) WINDOW.DEBUG.text += s + " ";
 }
 
 //
