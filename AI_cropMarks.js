@@ -13,7 +13,9 @@ var W,
     BLACK,
     WHITE;
 
+//
 // Initialization
+//
 
 function main() {
 
@@ -35,12 +37,12 @@ function main() {
 }
 
 function initSettings() {
-    var DOC      = app.activeDocument,
-        DOC_UNIT = getDocUnit();
+    var doc     = app.activeDocument,
+        docUnit = getDocUnit();
 
     var _sData = {
-        dX : new UnitValue(DOC.width,  "pt"),
-        dY : new UnitValue(DOC.height, "pt"),
+        dX : new UnitValue(doc.width,  "pt"),
+        dY : new UnitValue(doc.height, "pt"),
         cX : new UnitValue(0,     "in"),
         cY : new UnitValue(0,     "in"),
         bX : new UnitValue(0.125, "in"),
@@ -50,36 +52,32 @@ function initSettings() {
         sO : new UnitValue(0.25,  "in")
     };
 
-    var setVal = function (tag, val) {
-            // EXPECTS: String tag, Number val
-            // RETURNS: void
-            _sData[tag] = new UnitValue(val, DOC_UNIT);
-        },
-        getVal = function (tag) {
-            // EXPECTS: String tag
-            // RETURNS: Number value
-            return _sData[tag].as(DOC_UNIT);
-        },
-        getPts = function (tag) {
-            // EXPECTS: String tag
-            // RETURNS: Number value
-            return _sData[tag].as("pt");
-        };
-
     SETTINGS = {
-        docUnit       : DOC_UNIT,
+        docUnit       : docUnit,
         whiteOutlines : true,
         drawGuides    : false,
         debuggerOn    : false,
-        setVal        : setVal,
-        getVal        : getVal,
-        getPts        : getPts
+        setVal        : function (tag, val) {
+            // EXPECTS: String tag, Number val
+            // RETURNS: void
+            _sData[tag] = new UnitValue(val, docUnit);
+        },
+        getVal        : function (tag) {
+            // EXPECTS: String tag
+            // RETURNS: Number value
+            return _sData[tag].as(docUnit);
+        },
+        getPts        : function (tag) {
+            // EXPECTS: String tag
+            // RETURNS: Number value
+            return _sData[tag].as("pt");
+        }
     };
 
 }
 
 function initWindowMain() {
-    var DOC    = app.activeDocument;
+    var doc    = app.activeDocument;
 
     var WINDOW = new Window("dialog { \
         orientation   : 'column',            \
@@ -166,14 +164,14 @@ function initWindowMain() {
         BLEEDS = WINDOW.boxPanel.bleeds.row0,
         STROKE = WINDOW.strokePanel;
 
-    function newRolColHeader(parent, label) {
+    function createRolColHeader(parent, label) {
         var newStatic = parent.add("statictext");
         newStatic.preferredSize.width = 80;
         newStatic.text = label;
         return newStatic;
     }
 
-    function newRowColInput(parent, label, isEdit) {
+    function createRowColInput(parent, label, isEdit) {
         var newCol,
             newStatic,
             newText;
@@ -202,15 +200,15 @@ function initWindowMain() {
 
     }
 
-    function newRowColInputGroups() {
+    function createRowColInputGroupsArr() {
         var newRow0 = C_BOX.add("group"),
             newRow1 = C_BOX.add("group"),
             newRow2 = C_BOX.add("group");
 
         newRow0.orientation   = "row";
-        newRow0.alignChildren = ["left","center"];
-        newRolColHeader(newRow0, "Document");
-        newRolColHeader(newRow0, "Crop Area");
+        newRow0.alignChildren = ["left", "center"];
+        createRolColHeader(newRow0, "Document");
+        createRolColHeader(newRow0, "Crop Area");
 
         newRow1.orientation   = "row";
         newRow1.alignChildren = ["left", "center"];
@@ -219,20 +217,20 @@ function initWindowMain() {
 
         return [
             [
-                newRowColInput(newRow1, "W", false),
-                newRowColInput(newRow1, "X", true),
-                newRowColInput(newRow1, "W", true)
+                createRowColInput(newRow1, "W", false),
+                createRowColInput(newRow1, "X", true),
+                createRowColInput(newRow1, "W", true)
             ],
             [
-                newRowColInput(newRow2, "H", false),
-                newRowColInput(newRow2, "Y", true),
-                newRowColInput(newRow2, "H", true)
+                createRowColInput(newRow2, "H", false),
+                createRowColInput(newRow2, "Y", true),
+                createRowColInput(newRow2, "H", true)
             ]
         ];
 
     }
 
-    function initDebugPanel() {
+    function createDebugPanel() {
         var newPanel = WINDOW.add("panel"),
             newText  = newPanel.add("statictext");
         newPanel.alignChildren = ["fill", "fill"];
@@ -244,9 +242,9 @@ function initWindowMain() {
         return newText;
     }
 
-    if (SETTINGS.debuggerOn) W.DEBUG = initDebugPanel();
+    if (SETTINGS.debuggerOn) W.DEBUG = createDebugPanel();
 
-    var COL_ROW_INPUTS = newRowColInputGroups();
+    var COL_ROW_INPUTS = createRowColInputGroupsArr();
 
     // Controls
 
@@ -449,109 +447,92 @@ function initWindowMain() {
 
 }
 
+//
 // Draw Functions
+//
 
 function draw() {
-    var DOC   = app.activeDocument,
-        LAYER = DOC.layers.add(),
-        BOX   = LAYER.pathItems.rectangle(
+    var doc   = app.activeDocument,
+        layer = doc.layers.add(),
+        box   = layer.pathItems.rectangle(
             SETTINGS.getPts("bY") * -1,
             SETTINGS.getPts("bX"),
             SETTINGS.getPts("cX"),
             SETTINGS.getPts("cY")
         );
 
-    LAYER.name = "CROP MARKS";
+    layer.name = "CROP MARKS";
 
-    drawCropMarks(DOC, LAYER, BOX);
+    drawCropMarks(doc, layer, box);
 
-    if (SETTINGS.drawGuides) drawGuideBox(DOC, LAYER, BOX);
+    if (SETTINGS.drawGuides) drawGuideBox(doc, layer, box);
 
-    BOX.remove();
+    box.remove();
 
 }
 
-function drawCropMarks(DOC, LAYER, BOX) {
+function drawCropMarks(doc, layer, box) {
     var sW = SETTINGS.getPts("sW"),
         sL = SETTINGS.getPts("sL"),
         sO = SETTINGS.getPts("sO");
 
+    var DIR = {Up : 0, Right : 1, Down : 2, Left : 3};
+
     function getCorner(i) {
         // EXPECTS: Number i
         // RETURNS: Array anchor
-        return BOX.pathPoints[i].anchor.slice(0);
-    }
-
-    function drawLine(anchors, thickness, color) {
-        // EXPECTS: PathPoints anchors, Number thickness, Color color
-        // RETURNS: PathItem line
-
-        // define stroke
-        var newLine = LAYER.pathItems.add();
-        newLine.stroked      = true;
-        newLine.strokeColor  = color;
-        newLine.strokeWidth  = thickness;
-        newLine.pixelAligned = false;
-
-        // set path
-        newLine.setEntirePath(anchors);
-
-        return newLine;
-
+        return box.pathPoints[i].anchor.slice(0);
     }
 
     function drawMark(startPoint, direction, isOutline) {
         // EXPECTS: Array startPoint, Number direction, Boolean isOutline
         // RETURNS: PathItem line
-        var endPoint = startPoint.slice(0),
-            thickness,
-            color;
+        var newLine  = layer.pathItems.add(),
+            endPoint = startPoint.slice(0);
 
-        // set anchors
+        // get anchors
         switch (direction) {
-            case 0: // up
+            case DIR.Up :
                 startPoint[1] -= sO;
                 endPoint[1] = startPoint[1] - sL;
                 break;
-            case 1: // right
+            case DIR.Right :
                 startPoint[0] += sO;
                 endPoint[0] = startPoint[0] + sL;
                 break;
-            case 2: // down
+            case DIR.Down :
                 startPoint[1] += sO;
                 endPoint[1] = startPoint[1] + sL;
                 break;
-            case 3: // left
+            case DIR.Left :
                 startPoint[0] -= sO;
                 endPoint[0] = startPoint[0] - sL;
                 break;
         }
 
         // set line properties
-        if (!isOutline) {
-            thickness = sW;
-            color     = BLACK;
-        }
-        else {
-            thickness = sW * 3;
-            color     = WHITE;
-        }
+        newLine.stroked      = true;
+        newLine.strokeColor  = (!isOutline)? BLACK : WHITE;
+        newLine.strokeWidth  = (!isOutline)? sW    : sW * 3;
+        newLine.pixelAligned = false;
 
-        return drawLine([startPoint, endPoint], thickness, color);
+        // set line path
+        newLine.setEntirePath([startPoint, endPoint]);
+
+        // return line
+        return newLine;
 
     }
 
     function drawMarks(isOutline) {
-        // EXPECTS: Boolean isOutline
-        // RETURNS: void
-        drawMark(getCorner(0), 0, isOutline);
-        drawMark(getCorner(3), 0, isOutline);
-        drawMark(getCorner(3), 1, isOutline);
-        drawMark(getCorner(2), 1, isOutline);
-        drawMark(getCorner(2), 2, isOutline);
-        drawMark(getCorner(1), 2, isOutline);
-        drawMark(getCorner(1), 3, isOutline);
-        drawMark(getCorner(0), 3, isOutline);
+        drawMark(getCorner(0), DIR.Up, isOutline);
+        drawMark(getCorner(3), DIR.Up, isOutline);
+        drawMark(getCorner(3), DIR.Right, isOutline);
+        drawMark(getCorner(2), DIR.Right, isOutline);
+        drawMark(getCorner(2), DIR.Down, isOutline);
+        drawMark(getCorner(1), DIR.Down, isOutline);
+        drawMark(getCorner(1), DIR.Left, isOutline);
+        drawMark(getCorner(0), DIR.Left, isOutline);
     }
 
     if (SETTINGS.whiteOutlines) drawMarks(true);
@@ -560,10 +541,10 @@ function drawCropMarks(DOC, LAYER, BOX) {
 
 }
 
-function drawGuideBox(DOC, LAYER, BOX) {
+function drawGuideBox(doc, layer, box) {
 
     function drawGuide(shift, isVertical) {
-        var newLine    = LAYER.pathItems.add(),
+        var newLine    = layer.pathItems.add(),
             startPoint = [],
             endPoint   = [];
         newLine.guides = true;
@@ -588,7 +569,9 @@ function drawGuideBox(DOC, LAYER, BOX) {
 
 }
 
+//
 // Utility Functions
+//
 
 function isValidNumber(s) {
     // EXPECTS: String s
@@ -619,26 +602,28 @@ function getDocUnit() {
 }
 
 function colorRGB(r, g, b) {
-    var _color = new RGBColor();
-    _color.red   = r;
-    _color.green = g;
-    _color.blue  = b;
-    return _color;
+    var newColor = new RGBColor();
+    newColor.red   = r;
+    newColor.green = g;
+    newColor.blue  = b;
+    return newColor;
 }
 
 function colorCMYK(c, m, y, k) {
-    var _color = new CMYKColor();
-    _color.cyan    = c;
-    _color.magenta = m;
-    _color.yellow  = y;
-    _color.black   = k;
-    return _color;
+    var newColor = new CMYKColor();
+    newColor.cyan    = c;
+    newColor.magenta = m;
+    newColor.yellow  = y;
+    newColor.black   = k;
+    return newColor;
 }
 
 function printToDebug(s) {
     if (SETTINGS.debuggerOn) W.DEBUG.text += s + " ";
 }
 
+//
 // Run
+//
 
 main();
